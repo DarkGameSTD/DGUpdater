@@ -10,6 +10,7 @@ DGUpdater is a lightweight and customizable update manager designed to simplify 
 - ⚡ Lightweight and fast  
 - 🔧 Configurable update settings  
 - 🔒 Secure version delivery  
+- 🧮 Uses hashing method to detect required updates efficiently  
 
 ---
 
