@@ -1,6 +1,6 @@
-# MyUpdater
+# DGUpdater
 
-MyUpdater is a lightweight and customizable update manager designed to simplify the process of delivering new versions of your application to end users.  
+DGUpdater is a lightweight and customizable update manager designed to simplify the process of delivering new versions of your application to end users.  
 
 ---
 
