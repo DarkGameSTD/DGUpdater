@@ -18,7 +18,7 @@ namespace DGUpdaterTest
 {
     public partial class DGUpdaterTest : Form
     {
-        public string hashlink = "http://5.42.223.21/DarkGame207_UPDT/hashes(2.1.1).json";
+        public string hashlink = "http://5.42.223.21/DarkGame207_UPDT/hashes(2.1.5).json";
         const string batchname = "Update-Replacer.bat";
         public bool checkupdater;
         public bool downloadsfinished;
@@ -244,29 +244,6 @@ namespace DGUpdaterTest
             }
         }
 
-        async Task StartBatUpdateAsync()
-        {
-            //await Task.Delay(3000);
-            File.WriteAllText(batchname, $@"
-@echo off
-timeout /t 2 /nobreak >nul
-del ""DGUpdater.exe""
-rename ""DGUpdater1.exe"" ""DGUpdater.exe""
-start """" ""DGUpdater.exe""
-del ""{batchname}""
-exit
-");
-            await Task.Delay(3000);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = batchname,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            });
-           
-            Environment.Exit(0);
-        }
-
         static bool IsUserAdministrator()
         {
             var identity = WindowsIdentity.GetCurrent();
@@ -276,6 +253,7 @@ exit
 
         async Task DownloadAndUpdate()
         {
+            // Kill running game processes before updating
             foreach (var process in Process.GetProcesses())
             {
                 if (process.ProcessName == "DGLauncher" || process.ProcessName == "Rust207")
@@ -286,38 +264,51 @@ exit
 
             using (HttpClient client = new HttpClient())
             {
-                foreach (var missingfile in missing)
+                for (int i = 0; i < missing.Count; i++)
                 {
-                    string missingfilen = missingfile;
+                    string missingfile = missing[i];
+
+                    // ✅ Local save path
                     string filePath = Path.Combine(dhashes[missingfile].path.ToArray());
 
-                    if (File.Exists(filePath) && !missingfile.Contains("DGUpdater.exe"))
+                    bool isUpdater = missingfile.Equals("DGUpdater.exe", StringComparison.OrdinalIgnoreCase);
+
+                    if (File.Exists(filePath) && !isUpdater)
                     {
                         File.Delete(filePath);
                     }
-                    else if (missingfile.Contains("DGUpdater.exe"))
+
+                    if (isUpdater)
                     {
-                        missingfilen = Path.Combine(Directory.GetCurrentDirectory(), "DGUpdater1.exe");
+                        filePath = Path.Combine(Directory.GetCurrentDirectory(), "DGUpdater1.exe");
                         checkupdater = true;
                     }
+                    else
+                    {
+                        // make sure directory exists
+                        string dir = Path.GetDirectoryName(filePath);
+                        if (!string.IsNullOrEmpty(dir))
+                            Directory.CreateDirectory(dir);
+                    }
 
-                    string downloadUrl = $"http://5.42.223.21/DarkGame207_UPDT/{filePath}";
+                    // ✅ FIXED: build URL including subfolders from path[]
+                    string serverPath = string.Join("/", dhashes[missingfile].path);
+                    string downloadUrl = $"http://5.42.223.21/DarkGame207_UPDT/{serverPath}";
 
-                    mobinsview.Text = $"Downloading {missingfile}...";
+                    mobinsview.Text = $"Downloading {missingfile} ({i + 1}/{missing.Count})...";
 
                     try
                     {
                         using (var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
                         {
                             response.EnsureSuccessStatusCode();
-
                             var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                             var canReportProgress = totalBytes != -1;
 
                             using (var stream = await response.Content.ReadAsStreamAsync())
                             using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
                             {
-                                var buffer = new byte[81920]; 
+                                var buffer = new byte[81920];
                                 long totalRead = 0;
                                 int read;
 
@@ -334,17 +325,15 @@ exit
                                     {
                                         int percent = (int)((totalRead * 100L) / totalBytes);
                                         progressBar1.Value = percent;
-
-                                        mobinsview.Text = $"[{missingfile}] {percent}% " +
-                                                          $"{Math.Round(totalBytes / 1024f / 1024f, 2)}MB";
+                                        mobinsview.Text = $"[{missingfile}] {percent}%  " +
+                                                          $"{Math.Round(totalRead / 1024f / 1024f, 2)} MB / " +
+                                                          $"{Math.Round(totalBytes / 1024f / 1024f, 2)} MB";
                                     }
                                 }
-
                             }
                         }
 
                         finishedfiles++;
-                        mobinsview.Text = $"Downloaded {finishedfiles}/{missing.Count}";
                     }
                     catch (Exception ex)
                     {
@@ -353,19 +342,50 @@ exit
                 }
             }
 
+            // If the updater itself was updated
             if (checkupdater)
             {
-                Wait();
+                await StartBatUpdateAsync();
             }
             else
             {
-                if(changesFound && File.Exists("DGLauncher.exe"))
+                // Launch the game if updater didn't update itself
+                if (changesFound && File.Exists("DGLauncher.exe"))
                 {
                     Process.Start("DGLauncher.exe");
                 }
                 Application.Exit();
             }
         }
+
+
+
+
+        async Task StartBatUpdateAsync()
+        {
+            string batContent = $@"
+@echo off
+timeout /t 3 /nobreak >nul
+del ""DGUpdater.exe""
+rename ""DGUpdater1.exe"" ""DGUpdater.exe""
+start """" ""DGUpdater.exe""
+del ""{batchname}""
+exit
+";
+
+            File.WriteAllText(batchname, batContent);
+
+            // Start the batch file hidden
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = batchname,
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+
+            Environment.Exit(0); // exit the current updater
+        }
+
 
         void Wait()
         {
