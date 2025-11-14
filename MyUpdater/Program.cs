@@ -5,9 +5,6 @@ namespace DGUpdaterTest
 {
     internal static class Program
     {
-        /// <summary>
-        ///     Nothing You Bitch!
-        /// </summary>
         [STAThread]
         private static void Main()
         {

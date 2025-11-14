@@ -18,7 +18,7 @@ namespace DGUpdaterTest
 {
     public partial class DGUpdaterTest : Form
     {
-        public string hashlink = "http://5.42.223.21/DarkGame207_UPDT/hashes(2.1.5).json";
+        public string hashlink = "https://dark-gamevps.ir/DarkGame207_UPDT/hashes(2.1.5).json";
         const string batchname = "Update-Replacer.bat";
         public bool checkupdater;
         public bool downloadsfinished;
@@ -253,7 +253,6 @@ namespace DGUpdaterTest
 
         async Task DownloadAndUpdate()
         {
-            // Kill running game processes before updating
             foreach (var process in Process.GetProcesses())
             {
                 if (process.ProcessName == "DGLauncher" || process.ProcessName == "Rust207")
@@ -268,7 +267,6 @@ namespace DGUpdaterTest
                 {
                     string missingfile = missing[i];
 
-                    // ✅ Local save path
                     string filePath = Path.Combine(dhashes[missingfile].path.ToArray());
 
                     bool isUpdater = missingfile.Equals("DGUpdater.exe", StringComparison.OrdinalIgnoreCase);
@@ -285,15 +283,13 @@ namespace DGUpdaterTest
                     }
                     else
                     {
-                        // make sure directory exists
                         string dir = Path.GetDirectoryName(filePath);
                         if (!string.IsNullOrEmpty(dir))
                             Directory.CreateDirectory(dir);
                     }
 
-                    // ✅ FIXED: build URL including subfolders from path[]
                     string serverPath = string.Join("/", dhashes[missingfile].path);
-                    string downloadUrl = $"http://5.42.223.21/DarkGame207_UPDT/{serverPath}";
+                    string downloadUrl = $"https://dark-gamevps.ir/DarkGame207_UPDT/{serverPath}";
 
                     mobinsview.Text = $"Downloading {missingfile} ({i + 1}/{missing.Count})...";
 
@@ -342,14 +338,12 @@ namespace DGUpdaterTest
                 }
             }
 
-            // If the updater itself was updated
             if (checkupdater)
             {
                 await StartBatUpdateAsync();
             }
             else
             {
-                // Launch the game if updater didn't update itself
                 if (changesFound && File.Exists("DGLauncher.exe"))
                 {
                     Process.Start("DGLauncher.exe");
@@ -375,7 +369,6 @@ exit
 
             File.WriteAllText(batchname, batContent);
 
-            // Start the batch file hidden
             Process.Start(new ProcessStartInfo
             {
                 FileName = batchname,
@@ -383,7 +376,7 @@ exit
                 WindowStyle = ProcessWindowStyle.Hidden
             });
 
-            Environment.Exit(0); // exit the current updater
+            Environment.Exit(0); 
         }
 
 
