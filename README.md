@@ -139,9 +139,7 @@ Launch Application
 
 ## License
 
-This project is currently not licensed.
-
-If you plan to use or distribute it, please contact the repository owner.
+This project is currently licensed with MIT License.
 
 ---
 
